@@ -67,6 +67,7 @@ const FACEBOOK_RESERVED_CREATORS = new Set([
   'people', 'home.php', 'notifications', 'friends', 'share', 'share.php', 'sharer.php',
   'videos', 'reels', 'stories',
 ])
+const DCARD_HANDLE = /^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,59}$/
 
 function parseMetaUrl(input: string, platform: string): ParsedId {
   const invalid: ParsedId = { id: input, type: 'unknown', original: input, isValid: false }
@@ -126,9 +127,44 @@ function parseMetaUrl(input: string, platform: string): ParsedId {
     : invalid
 }
 
+function parseDcardUrl(input: string): ParsedId {
+  const invalid: ParsedId = { id: input, type: 'unknown', original: input, isValid: false }
+  if (/^[1-9]\d*$/.test(input)) {
+    return { id: input, type: 'video', original: input, isValid: true }
+  }
+  if (input.startsWith('@') && DCARD_HANDLE.test(input.slice(1))) {
+    return { id: input.slice(1), type: 'creator', original: input, isValid: true }
+  }
+  if (DCARD_HANDLE.test(input) && !/^\d+$/.test(input)) {
+    return { id: input, type: 'creator', original: input, isValid: true }
+  }
+
+  let url: URL
+  try {
+    url = new URL(input)
+  } catch {
+    return invalid
+  }
+  const authority = input.match(/^https?:\/\/([^/?#]*)/i)?.[1] || ''
+  if (!authority || (url.protocol !== 'https:' && url.protocol !== 'http:') || url.username || url.password
+    || authority.includes(':') || !['dcard.tw', 'www.dcard.tw'].includes(url.hostname)) return invalid
+
+  let path: string
+  try {
+    path = decodeURIComponent(url.pathname)
+  } catch {
+    return invalid
+  }
+  const post = path.match(/^\/(?:f\/[a-zA-Z0-9_.-]+\/)?p\/([1-9]\d*)(?:-[^/]+)?\/?$/)
+  if (post) return { id: post[1], type: 'video', original: input, isValid: true }
+  const creator = path.match(/^\/@([a-zA-Z0-9_][a-zA-Z0-9_.-]{0,59})(?:\/posts)?\/?$/)
+  return creator ? { id: creator[1], type: 'creator', original: input, isValid: true } : invalid
+}
+
 export function parseUrl(input: string, platform: string): ParsedId {
   const trimmed = input.trim()
   if (platform === 'threads' || platform === 'facebook') return parseMetaUrl(trimmed, platform)
+  if (platform === 'dcard') return parseDcardUrl(trimmed)
 
   // If it's just an ID (no URL structure), return as unknown type
   if (!trimmed.includes('/') && !trimmed.includes('.')) {

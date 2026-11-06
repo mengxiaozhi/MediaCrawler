@@ -11,8 +11,8 @@ import { useCrawlerStore } from '@/store/crawlerStore'
 import { usePlatforms, useConfigOptions, useStartCrawler, useStopCrawler } from '@/hooks/useCrawler'
 import { ParsedIdList } from './ParsedIdList'
 
-const META_PLATFORMS = new Set(['threads', 'facebook'])
-const META_SAVE_OPTIONS = new Set(['json', 'jsonl', 'csv', 'excel'])
+const BROWSER_PLATFORMS = new Set(['threads', 'facebook', 'dcard'])
+const BROWSER_SAVE_OPTIONS = new Set(['json', 'jsonl', 'csv', 'excel'])
 
 type SectionProps = {
   title: string
@@ -145,23 +145,26 @@ export function CrawlerConfigPanel() {
   const { mutate: startCrawler, isPending: isStarting } = useStartCrawler()
   const { mutate: stopCrawler, isPending: isStopping } = useStopCrawler()
 
-  const isMetaPlatform = META_PLATFORMS.has(config.platform)
+  const isBrowserPlatform = BROWSER_PLATFORMS.has(config.platform)
   const loginTypes = options?.login_types.filter((type) =>
-    isMetaPlatform ? type.value === 'cookie' || type.value === 'manual' : type.value !== 'manual'
+    isBrowserPlatform ? type.value === 'cookie' || type.value === 'manual' : type.value !== 'manual'
   )
   const saveOptions = options?.save_options.filter((option) =>
-    !isMetaPlatform || META_SAVE_OPTIONS.has(option.value)
+    !isBrowserPlatform || BROWSER_SAVE_OPTIONS.has(option.value)
   )
+  const loginHint = config.platform === 'dcard'
+    ? t('field.dcardLoginHint')
+    : isBrowserPlatform ? t('field.browserLoginHint') : undefined
 
   const handlePlatformChange = (platform: string) => {
-    const isMeta = META_PLATFORMS.has(platform)
+    const isBrowser = BROWSER_PLATFORMS.has(platform)
     updateConfig({
       platform,
-      login_type: isMeta
+      login_type: platform === 'dcard' ? 'cookie' : isBrowser
         ? (config.login_type === 'cookie' ? 'cookie' : 'manual')
         : (config.login_type === 'manual' ? 'qrcode' : config.login_type),
-      save_option: isMeta && !META_SAVE_OPTIONS.has(config.save_option) ? 'jsonl' : config.save_option,
-      enable_media: isMeta ? false : config.enable_media,
+      save_option: isBrowser && !BROWSER_SAVE_OPTIONS.has(config.save_option) ? 'jsonl' : config.save_option,
+      enable_media: isBrowser ? false : config.enable_media,
     })
   }
 
@@ -307,7 +310,7 @@ export function CrawlerConfigPanel() {
           description={t('section.authMatrix.description')}
           icon={KeyRound}
         >
-          <Field label={t('field.loginMethod')} hint={isMetaPlatform ? t('field.metaLoginHint') : undefined}>
+          <Field label={t('field.loginMethod')} hint={loginHint}>
             <Select
               value={config.login_type}
               onValueChange={(value) => updateConfig({ login_type: value })}
@@ -353,7 +356,7 @@ export function CrawlerConfigPanel() {
           description={t('section.outputConfig.description')}
           icon={Database}
         >
-          <Field label={t('field.saveFormat')} hint={isMetaPlatform ? t('field.metaStorageHint') : undefined}>
+          <Field label={t('field.saveFormat')} hint={isBrowserPlatform ? t('field.browserStorageHint') : undefined}>
             <Select
               value={config.save_option}
               onValueChange={(value) => updateConfig({ save_option: value })}
@@ -406,7 +409,7 @@ export function CrawlerConfigPanel() {
               <Checkbox
                 checked={config.enable_media}
                 onCheckedChange={(checked) => updateConfig({ enable_media: checked === true })}
-                disabled={isDisabled || isMetaPlatform}
+                disabled={isDisabled || isBrowserPlatform}
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

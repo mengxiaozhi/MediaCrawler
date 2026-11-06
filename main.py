@@ -45,6 +45,7 @@ from media_platform.xhs import XiaoHongShuCrawler
 from media_platform.zhihu import ZhihuCrawler
 from media_platform.threads import ThreadsCrawler
 from media_platform.facebook import FacebookCrawler
+from media_platform.dcard import DcardCrawler
 from tools.async_file_writer import AsyncFileWriter
 from var import crawler_type_var
 
@@ -60,6 +61,7 @@ class CrawlerFactory:
         "zhihu": ZhihuCrawler,
         "threads": ThreadsCrawler,
         "facebook": FacebookCrawler,
+        "dcard": DcardCrawler,
     }
 
     @staticmethod
@@ -105,11 +107,11 @@ async def main() -> None:
     global crawler
 
     args = await cmd_arg.parse_cmd()
-    if config.PLATFORM in {"threads", "facebook"} and not args.init_db:
+    if config.PLATFORM in {"threads", "facebook", "dcard"} and not args.init_db:
         if config.SAVE_DATA_OPTION not in {"json", "jsonl", "csv", "excel"}:
-            raise ValueError("Threads/Facebook support file storage only: json, jsonl, csv, excel")
+            raise ValueError("Threads/Facebook/Dcard support file storage only: json, jsonl, csv, excel")
         if config.ENABLE_GET_MEDIA:
-            raise ValueError("Threads/Facebook media download is not supported; use --get_media false")
+            raise ValueError("Threads/Facebook/Dcard media download is not supported; use --get_media false")
 
     if args.init_db:
         await db.init_db(args.init_db)

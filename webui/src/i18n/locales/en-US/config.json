@@ -36,7 +36,8 @@
       "ks": "Examples:\n3xf8enb8dbj6uig\nhttps://www.kuaishou.com/short-video/xxx",
       "default": "Enter post/video ID or URL...",
       "threads": "https://www.threads.com/@username/post/POST_CODE",
-      "facebook": "https://www.facebook.com/page/posts/POST_ID"
+      "facebook": "https://www.facebook.com/page/posts/POST_ID",
+      "dcard": "https://www.dcard.tw/f/talk/p/POST_ID"
     },
     "creatorIds": "CREATOR_ID",
     "creatorIdsHint": "Enter creator ID/URL, one per line or comma-separated",
@@ -48,7 +49,8 @@
       "ks": "Examples:\n3x84qugg4ch9zhs\nhttps://www.kuaishou.com/profile/xxx",
       "default": "Enter creator ID or URL...",
       "threads": "@username\nhttps://www.threads.com/@username",
-      "facebook": "page.name\nhttps://www.facebook.com/profile.php?id=USER_ID"
+      "facebook": "page.name\nhttps://www.facebook.com/profile.php?id=USER_ID",
+      "dcard": "@username\nhttps://www.dcard.tw/@username"
     },
     "loginMethod": "LOGIN_METHOD",
     "loginMethodPlaceholder": "Select login method",
@@ -64,8 +66,9 @@
     "headlessMode": "HEADLESS_MODE",
     "headlessModeHint": "Run browser without GUI",
     "manualLogin": "Manual browser login",
-    "metaLoginHint": "Use cookies or sign in in the opened browser. A saved browser session can be reused.",
-    "metaStorageHint": "Threads and Facebook support JSON, JSONL, CSV and Excel. Media URLs are saved; media downloads are unavailable."
+    "browserLoginHint": "Use cookies or sign in in the opened browser. A saved browser session can be reused.",
+    "browserStorageHint": "Threads, Facebook and Dcard support JSON, JSONL, CSV and Excel. Media URLs are saved; media downloads are unavailable.",
+    "dcardLoginHint": "Public content can use Cookie login with an empty cookie string. Manual login opens a browser."
   },
   "button": {
     "initiateScan": "INITIATE SCAN",

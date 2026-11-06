@@ -36,7 +36,8 @@
       "ks": "示例:\n3xf8enb8dbj6uig\nhttps://www.kuaishou.com/short-video/xxx",
       "default": "输入帖子/视频 ID 或 URL...",
       "threads": "https://www.threads.com/@username/post/POST_CODE",
-      "facebook": "https://www.facebook.com/page/posts/POST_ID"
+      "facebook": "https://www.facebook.com/page/posts/POST_ID",
+      "dcard": "https://www.dcard.tw/f/talk/p/POST_ID"
     },
     "creatorIds": "创作者 ID",
     "creatorIdsHint": "输入创作者的ID/URL，每行一个或用逗号分隔",
@@ -48,7 +49,8 @@
       "ks": "示例:\n3x84qugg4ch9zhs\nhttps://www.kuaishou.com/profile/xxx",
       "default": "输入创作者 ID 或 URL...",
       "threads": "@username\nhttps://www.threads.com/@username",
-      "facebook": "page.name\nhttps://www.facebook.com/profile.php?id=USER_ID"
+      "facebook": "page.name\nhttps://www.facebook.com/profile.php?id=USER_ID",
+      "dcard": "@username\nhttps://www.dcard.tw/@username"
     },
     "loginMethod": "登录方式",
     "loginMethodPlaceholder": "选择登录方式",
@@ -64,8 +66,9 @@
     "headlessMode": "无头模式",
     "headlessModeHint": "无 GUI 运行浏览器",
     "manualLogin": "浏览器手动登录",
-    "metaLoginHint": "使用 Cookie，或在打开的浏览器中登录。可复用已保存的浏览器会话。",
-    "metaStorageHint": "Threads 和 Facebook 支持 JSON、JSONL、CSV 与 Excel。保存媒体链接，暂不支持媒体下载。"
+    "browserLoginHint": "使用 Cookie，或在打开的浏览器中登录。可复用已保存的浏览器会话。",
+    "browserStorageHint": "Threads、Facebook 和 Dcard 支持 JSON、JSONL、CSV 与 Excel。保存媒体链接，暂不支持媒体下载。",
+    "dcardLoginHint": "公开内容可选择 Cookie 登录并留空 Cookies；手动登录会打开浏览器。"
   },
   "button": {
     "initiateScan": "开始爬虫",

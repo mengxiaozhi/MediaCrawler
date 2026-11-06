@@ -102,3 +102,55 @@ test('multiple pasted IDs accept comma and newline separators', () => {
     ['alice', 'bob', 'ABC-123_'],
   )
 })
+
+test('Dcard accepts article IDs, forum URLs, and title slugs', () => {
+  for (const input of [
+    '123456789',
+    'https://www.dcard.tw/f/talk/p/123456789',
+    'https://dcard.tw/f/talk/p/123456789-文章標題?cid=1',
+    'http://www.dcard.tw/p/123456789',
+    'https://www.dcard.tw/p/123456789-a-title/',
+  ]) {
+    const result = parseUrl(input, 'dcard')
+    assert.equal(result.isValid, true, input)
+    assert.equal(result.type, 'video', input)
+    assert.equal(result.id, '123456789', input)
+    assert.equal(result.original, input)
+  }
+})
+
+test('Dcard accepts creator usernames and their posts routes', () => {
+  for (const input of [
+    'alice.name', '@alice.name', 'https://www.dcard.tw/@alice.name',
+    'https://dcard.tw/@alice.name/posts?tab=posts',
+  ]) {
+    const result = parseUrl(input, 'dcard')
+    assert.equal(result.isValid, true, input)
+    assert.equal(result.type, 'creator', input)
+    assert.equal(result.id, 'alice.name', input)
+  }
+  assert.equal(parseUrl('@123', 'dcard').type, 'creator')
+})
+
+test('Dcard rejects unrelated domains, credential URLs and malformed routes', () => {
+  for (const input of [
+    '', '0', '000', '-123', '.alice', '@-alice', `@${'a'.repeat(61)}`,
+    'https://www.dcard.tw.attacker.test/f/talk/p/123',
+    'https://evil.test/?url=https://www.dcard.tw/f/talk/p/123',
+    'https://user:secret@www.dcard.tw/f/talk/p/123',
+    'https://www.dcard.tw:443/f/talk/p/123',
+    'https://www.dcard.tw:8080/f/talk/p/123',
+    'https:dcard.tw/p/123',
+    'file://www.dcard.tw/f/talk/p/123',
+    'https://www.dcard.tw/f/talk',
+    'https://www.dcard.tw/f/talk/p/0',
+    'https://www.dcard.tw/f/talk/p/not-an-id',
+    'https://www.dcard.tw/f/talk/p/123/comments',
+    'https://www.dcard.tw/f/talk/p/123-title%2Fcomments',
+    'https://www.dcard.tw/@alice/followers',
+  ]) assert.equal(parseUrl(input, 'dcard').isValid, false, input)
+  assert.deepEqual(
+    parseMultipleUrls('123\nhttps://www.dcard.tw/f/talk/p/456, @alice', 'dcard').map(row => row.id),
+    ['123', '456', 'alice'],
+  )
+})

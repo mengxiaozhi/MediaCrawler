@@ -49,6 +49,7 @@ class PlatformEnum(str, Enum):
     ZHIHU = "zhihu"
     THREADS = "threads"
     FACEBOOK = "facebook"
+    DCARD = "dcard"
 
 
 class LoginTypeEnum(str, Enum):
@@ -165,7 +166,7 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
             PlatformEnum,
             typer.Option(
                 "--platform",
-                help="Media platform selection (xhs=XiaoHongShu | dy=Douyin | ks=Kuaishou | bili=Bilibili | wb=Weibo | tieba=Baidu Tieba | zhihu=Zhihu | threads=Threads | facebook=Facebook)",
+                help="Media platform selection (xhs=XiaoHongShu | dy=Douyin | ks=Kuaishou | bili=Bilibili | wb=Weibo | tieba=Baidu Tieba | zhihu=Zhihu | threads=Threads | facebook=Facebook | dcard=Dcard)",
                 rich_help_panel="Basic Configuration",
             ),
         ] = _coerce_enum(PlatformEnum, config.PLATFORM, PlatformEnum.XHS),
@@ -173,7 +174,7 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
             LoginTypeEnum,
             typer.Option(
                 "--lt",
-                help="Login type (qrcode=QR Code | phone=Phone | cookie=Cookie | manual=Browser login for Threads/Facebook)",
+                help="Login type (qrcode=QR Code | phone=Phone | cookie=Cookie | manual=Browser login for Threads/Facebook/Dcard)",
                 rich_help_panel="Account Configuration",
             ),
         ] = _coerce_enum(LoginTypeEnum, config.LOGIN_TYPE, LoginTypeEnum.QRCODE),
@@ -402,6 +403,8 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 config.THREADS_SPECIFIED_ID_LIST = specified_id_list
             elif platform == PlatformEnum.FACEBOOK:
                 config.FACEBOOK_SPECIFIED_ID_LIST = specified_id_list
+            elif platform == PlatformEnum.DCARD:
+                config.DCARD_SPECIFIED_ID_LIST = specified_id_list
 
         if creator_id_list:
             if platform == PlatformEnum.XHS:
@@ -422,6 +425,8 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 config.THREADS_CREATOR_ID_LIST = creator_id_list
             elif platform == PlatformEnum.FACEBOOK:
                 config.FACEBOOK_CREATOR_ID_LIST = creator_id_list
+            elif platform == PlatformEnum.DCARD:
+                config.DCARD_CREATOR_ID_LIST = creator_id_list
 
         return SimpleNamespace(
             platform=config.PLATFORM,

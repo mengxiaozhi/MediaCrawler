@@ -54,7 +54,7 @@ class MetaCrawler(AbstractCrawler):
 
     def _validate(self):
         # Validate before opening a browser, including options inherited from the UI.
-        self._store = MetaStore(self.platform)
+        self._store = self._create_store()
         if config.LOGIN_TYPE not in ("cookie", "manual"):
             raise ValueError(f"{self.platform} supports --lt cookie (public/existing session) "
                              "or --lt manual (sign in in the browser).")
@@ -66,10 +66,10 @@ class MetaCrawler(AbstractCrawler):
             raise ValueError("Post limit and starting page must be positive.")
         if config.CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES < 0:
             raise ValueError("Comment limit cannot be negative.")
-        for name in ("META_PAGE_TIMEOUT_MS", "META_SCROLL_MAX_ROUNDS", "META_SCROLL_IDLE_ROUNDS", "META_LOGIN_TIMEOUT_SEC"):
-            if getattr(config, name) <= 0:
+        for name in ("PAGE_TIMEOUT_MS", "SCROLL_MAX_ROUNDS", "SCROLL_IDLE_ROUNDS", "LOGIN_TIMEOUT_SEC"):
+            if self._setting(name) <= 0:
                 raise ValueError(f"{name} must be positive.")
-        if config.META_SCROLL_WAIT_SEC < 0 or config.CRAWLER_MAX_SLEEP_SEC < 0:
+        if self._setting("SCROLL_WAIT_SEC") < 0 or config.CRAWLER_MAX_SLEEP_SEC < 0:
             raise ValueError("Crawl delays cannot be negative.")
         if config.CRAWLER_TYPE == "detail":
             values = self._configured_list("SPECIFIED_ID_LIST")
@@ -85,6 +85,13 @@ class MetaCrawler(AbstractCrawler):
                 self.adapter.normalize_creator_url(value)
         elif not any(word.strip() for word in config.KEYWORDS.split(",")):
             raise ValueError("Specify at least one search keyword.")
+
+    def _create_store(self):
+        return MetaStore(self.platform)
+
+    def _setting(self, name):
+        prefix = getattr(self.adapter, "CONFIG_PREFIX", "META")
+        return getattr(config, f"{prefix}_{name}")
 
     def _configured_list(self, suffix):
         return getattr(config, f"{self.platform.upper()}_{suffix}")
@@ -107,7 +114,7 @@ class MetaCrawler(AbstractCrawler):
                     self.browser_context = await self.launch_browser(
                         playwright.chromium, proxy, None, headless=config.HEADLESS)
                 self.context_page = await self.browser_context.new_page()
-                self.context_page.set_default_timeout(config.META_PAGE_TIMEOUT_MS)
+                self.context_page.set_default_timeout(self._setting("PAGE_TIMEOUT_MS"))
                 await self._login()
                 if config.CRAWLER_TYPE == "search":
                     await self.search()
@@ -138,23 +145,27 @@ class MetaCrawler(AbstractCrawler):
             raise ValueError("Manual login requires --headless false.")
         await self.context_page.goto(self.adapter.BASE_URL, wait_until="domcontentloaded")
         utils.logger.info("[%s] Sign in in the browser (timeout: %ss).",
-                          self.platform, config.META_LOGIN_TIMEOUT_SEC)
+                          self.platform, self._setting("LOGIN_TIMEOUT_SEC"))
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + config.META_LOGIN_TIMEOUT_SEC
+        deadline = loop.time() + self._setting("LOGIN_TIMEOUT_SEC")
         while loop.time() < deadline:
             cookies = await self.browser_context.cookies(self.adapter.BASE_URL)
             present = {cookie["name"] for cookie in cookies if cookie.get("value")}
-            if set(self.adapter.AUTH_COOKIE_NAMES).issubset(present):
+            required = set(self.adapter.AUTH_COOKIE_NAMES)
+            success_script = getattr(self.adapter, "LOGIN_SUCCESS_JS", None)
+            if required and required.issubset(present):
+                return
+            if success_script and await self.context_page.evaluate(success_script):
                 return
             await asyncio.sleep(1)
         raise MetaCrawlerError("Login timed out. Finish signing in and retry with --lt cookie.")
 
     async def _navigate(self, url):
         response = await self.context_page.goto(url, wait_until="domcontentloaded",
-                                                timeout=config.META_PAGE_TIMEOUT_MS)
+                                                timeout=self._setting("PAGE_TIMEOUT_MS"))
         if response is not None and response.status >= 400:
             raise MetaCrawlerError(f"{self.platform} returned HTTP {response.status}.")
-        await asyncio.sleep(config.META_SCROLL_WAIT_SEC)
+        await asyncio.sleep(self._setting("SCROLL_WAIT_SEC"))
         await self._check_access()
 
     async def _check_access(self):
@@ -168,14 +179,14 @@ class MetaCrawler(AbstractCrawler):
 
     async def _scroll(self):
         await self.context_page.evaluate("window.scrollBy(0, Math.max(window.innerHeight, 800))")
-        await asyncio.sleep(max(config.META_SCROLL_WAIT_SEC, config.CRAWLER_MAX_SLEEP_SEC))
+        await asyncio.sleep(max(self._setting("SCROLL_WAIT_SEC"), config.CRAWLER_MAX_SLEEP_SEC))
         await self._check_access()
 
     async def _collect_posts(self, limit, start_round=1):
         results = {}
         observed = set()
         idle = 0
-        for round_number in range(1, config.META_SCROLL_MAX_ROUNDS + 1):
+        for round_number in range(1, self._setting("SCROLL_MAX_ROUNDS") + 1):
             records = await self.context_page.evaluate(self.adapter.EXTRACT_POSTS_JS)
             new_ids = set()
             for record in records:
@@ -194,9 +205,9 @@ class MetaCrawler(AbstractCrawler):
                         return list(results.values())
             observed.update(new_ids)
             idle = 0 if new_ids else idle + 1
-            if idle >= config.META_SCROLL_IDLE_ROUNDS:
+            if idle >= self._setting("SCROLL_IDLE_ROUNDS"):
                 break
-            if round_number < config.META_SCROLL_MAX_ROUNDS:
+            if round_number < self._setting("SCROLL_MAX_ROUNDS"):
                 await self._scroll()
         if not results:
             utils.logger.warning("[%s] No recognizable posts. The page may be empty, restricted, "
@@ -252,7 +263,7 @@ class MetaCrawler(AbstractCrawler):
         target = self.adapter.post_id(url)
         record = None
         # Wait for hydration without treating related/suggested posts as the target.
-        for _ in range(config.META_SCROLL_IDLE_ROUNDS):
+        for _ in range(self._setting("SCROLL_IDLE_ROUNDS")):
             records = await self.context_page.evaluate(self.adapter.EXTRACT_POSTS_JS)
             for item in records:
                 try:
@@ -264,7 +275,7 @@ class MetaCrawler(AbstractCrawler):
                     continue
             if record:
                 break
-            await asyncio.sleep(config.META_SCROLL_WAIT_SEC)
+            await asyncio.sleep(self._setting("SCROLL_WAIT_SEC"))
             await self._check_access()
         if not record:
             raise MetaCrawlerError(f"Post {target} is unavailable or its layout is not recognized.")
@@ -285,7 +296,7 @@ class MetaCrawler(AbstractCrawler):
         expand = re.compile(r"^(?:View more comments|View previous comments|View more replies|"
                             r"View replies|See more comments|查看更多留言|查看先前的留言|"
                             r"查看更多回复|查看更多評論|查看回覆)(?:\s*\(?.*\)?)?$", re.I)
-        for round_number in range(config.META_SCROLL_MAX_ROUNDS):
+        for round_number in range(self._setting("SCROLL_MAX_ROUNDS")):
             rows = await self.context_page.evaluate(self.adapter.EXTRACT_COMMENTS_JS)
             before = len(seen)
             for item in rows:
@@ -304,13 +315,13 @@ class MetaCrawler(AbstractCrawler):
             for index in range(min(await buttons.count(), 3)):
                 button = buttons.nth(index)
                 if await button.is_visible():
-                    await button.click(timeout=config.META_PAGE_TIMEOUT_MS)
+                    await button.click(timeout=self._setting("PAGE_TIMEOUT_MS"))
                     clicked = True
                     break
             idle = 0 if len(seen) > before or clicked else idle + 1
-            if idle >= config.META_SCROLL_IDLE_ROUNDS:
+            if idle >= self._setting("SCROLL_IDLE_ROUNDS"):
                 break
-            if round_number + 1 < config.META_SCROLL_MAX_ROUNDS:
+            if round_number + 1 < self._setting("SCROLL_MAX_ROUNDS"):
                 await self._scroll()
 
     async def launch_browser(self, chromium: BrowserType, playwright_proxy: Optional[Dict],

@@ -35,6 +35,7 @@ class PlatformEnum(str, Enum):
     ZHIHU = "zhihu"
     THREADS = "threads"
     FACEBOOK = "facebook"
+    DCARD = "dcard"
 
 
 class LoginTypeEnum(str, Enum):
@@ -83,13 +84,13 @@ class CrawlerStartRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_platform_options(self):
-        if self.platform in {PlatformEnum.THREADS, PlatformEnum.FACEBOOK}:
+        if self.platform in {PlatformEnum.THREADS, PlatformEnum.FACEBOOK, PlatformEnum.DCARD}:
             if self.save_option.value not in {"json", "jsonl", "csv", "excel"}:
-                raise ValueError("Threads/Facebook support file storage only: json, jsonl, csv, excel")
+                raise ValueError("Threads/Facebook/Dcard support file storage only: json, jsonl, csv, excel")
             if self.enable_media:
-                raise ValueError("Threads/Facebook media download is not supported")
+                raise ValueError("Threads/Facebook/Dcard media download is not supported")
             if self.login_type not in {LoginTypeEnum.COOKIE, LoginTypeEnum.MANUAL}:
-                raise ValueError("Threads/Facebook require cookie or manual browser login")
+                raise ValueError("Threads/Facebook/Dcard require cookie or manual browser login")
         return self
 
 
