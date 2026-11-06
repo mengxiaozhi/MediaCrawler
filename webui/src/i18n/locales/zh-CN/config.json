@@ -34,7 +34,9 @@
       "dy": "示例:\n7525538910311632128\nhttps://www.douyin.com/video/xxx\nhttps://v.douyin.com/xxx (短链接)",
       "wb": "示例:\n4982041758140155\nhttps://weibo.com/xxx/xxx",
       "ks": "示例:\n3xf8enb8dbj6uig\nhttps://www.kuaishou.com/short-video/xxx",
-      "default": "输入帖子/视频 ID 或 URL..."
+      "default": "输入帖子/视频 ID 或 URL...",
+      "threads": "https://www.threads.com/@username/post/POST_CODE",
+      "facebook": "https://www.facebook.com/page/posts/POST_ID"
     },
     "creatorIds": "创作者 ID",
     "creatorIdsHint": "输入创作者的ID/URL，每行一个或用逗号分隔",
@@ -44,7 +46,9 @@
       "dy": "示例:\nMS4wLjABAAAAxxx\nhttps://www.douyin.com/user/MS4wLjABAAAAxxx",
       "wb": "示例:\n5533390220\nhttps://weibo.com/u/5533390220",
       "ks": "示例:\n3x84qugg4ch9zhs\nhttps://www.kuaishou.com/profile/xxx",
-      "default": "输入创作者 ID 或 URL..."
+      "default": "输入创作者 ID 或 URL...",
+      "threads": "@username\nhttps://www.threads.com/@username",
+      "facebook": "page.name\nhttps://www.facebook.com/profile.php?id=USER_ID"
     },
     "loginMethod": "登录方式",
     "loginMethodPlaceholder": "选择登录方式",
@@ -58,7 +62,10 @@
     "downloadMedia": "下载媒体",
     "downloadMediaHint": "下载封面与视频（图文笔记下载图片），支持小红书/抖音/快手/B站/微博",
     "headlessMode": "无头模式",
-    "headlessModeHint": "无 GUI 运行浏览器"
+    "headlessModeHint": "无 GUI 运行浏览器",
+    "manualLogin": "浏览器手动登录",
+    "metaLoginHint": "使用 Cookie，或在打开的浏览器中登录。可复用已保存的浏览器会话。",
+    "metaStorageHint": "Threads 和 Facebook 支持 JSON、JSONL、CSV 与 Excel。保存媒体链接，暂不支持媒体下载。"
   },
   "button": {
     "initiateScan": "开始爬虫",

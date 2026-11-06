@@ -159,6 +159,8 @@ async def get_platforms():
             {"value": "wb", "label": "Weibo", "icon": "message-circle"},
             {"value": "tieba", "label": "Baidu Tieba", "icon": "messages-square"},
             {"value": "zhihu", "label": "Zhihu", "icon": "help-circle"},
+            {"value": "threads", "label": "Threads", "icon": "at-sign"},
+            {"value": "facebook", "label": "Facebook", "icon": "users"},
         ]
     }
 
@@ -170,6 +172,7 @@ async def get_config_options():
         "login_types": [
             {"value": "qrcode", "label": "QR Code Login"},
             {"value": "cookie", "label": "Cookie Login"},
+            {"value": "manual", "label": "Manual Browser Login (Threads/Facebook)"},
         ],
         "crawler_types": [
             {"value": "search", "label": "Search Mode"},

@@ -47,6 +47,8 @@ class PlatformEnum(str, Enum):
     WEIBO = "wb"
     TIEBA = "tieba"
     ZHIHU = "zhihu"
+    THREADS = "threads"
+    FACEBOOK = "facebook"
 
 
 class LoginTypeEnum(str, Enum):
@@ -55,6 +57,7 @@ class LoginTypeEnum(str, Enum):
     QRCODE = "qrcode"
     PHONE = "phone"
     COOKIE = "cookie"
+    MANUAL = "manual"
 
 
 class CrawlerTypeEnum(str, Enum):
@@ -162,7 +165,7 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
             PlatformEnum,
             typer.Option(
                 "--platform",
-                help="Media platform selection (xhs=XiaoHongShu | dy=Douyin | ks=Kuaishou | bili=Bilibili | wb=Weibo | tieba=Baidu Tieba | zhihu=Zhihu)",
+                help="Media platform selection (xhs=XiaoHongShu | dy=Douyin | ks=Kuaishou | bili=Bilibili | wb=Weibo | tieba=Baidu Tieba | zhihu=Zhihu | threads=Threads | facebook=Facebook)",
                 rich_help_panel="Basic Configuration",
             ),
         ] = _coerce_enum(PlatformEnum, config.PLATFORM, PlatformEnum.XHS),
@@ -170,7 +173,7 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
             LoginTypeEnum,
             typer.Option(
                 "--lt",
-                help="Login type (qrcode=QR Code | phone=Phone | cookie=Cookie)",
+                help="Login type (qrcode=QR Code | phone=Phone | cookie=Cookie | manual=Browser login for Threads/Facebook)",
                 rich_help_panel="Account Configuration",
             ),
         ] = _coerce_enum(LoginTypeEnum, config.LOGIN_TYPE, LoginTypeEnum.QRCODE),
@@ -352,8 +355,8 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
         init_db_value = init_db.value if init_db else None
 
         # Parse specified_id and creator_id into lists
-        specified_id_list = [id.strip() for id in specified_id.split(",") if id.strip()] if specified_id else []
-        creator_id_list = [id.strip() for id in creator_id.split(",") if id.strip()] if creator_id else []
+        specified_id_list = [id.strip() for id in re.split(r"[,\n]+", specified_id) if id.strip()] if specified_id else []
+        creator_id_list = [id.strip() for id in re.split(r"[,\n]+", creator_id) if id.strip()] if creator_id else []
 
         # override global config
         config.PLATFORM = platform.value
@@ -395,6 +398,10 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 ]
             elif platform == PlatformEnum.ZHIHU:
                 config.ZHIHU_SPECIFIED_ID_LIST = specified_id_list
+            elif platform == PlatformEnum.THREADS:
+                config.THREADS_SPECIFIED_ID_LIST = specified_id_list
+            elif platform == PlatformEnum.FACEBOOK:
+                config.FACEBOOK_SPECIFIED_ID_LIST = specified_id_list
 
         if creator_id_list:
             if platform == PlatformEnum.XHS:
@@ -411,6 +418,10 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 config.TIEBA_CREATOR_URL_LIST = [
                     _normalize_tieba_creator_url(item) for item in creator_id_list
                 ]
+            elif platform == PlatformEnum.THREADS:
+                config.THREADS_CREATOR_ID_LIST = creator_id_list
+            elif platform == PlatformEnum.FACEBOOK:
+                config.FACEBOOK_CREATOR_ID_LIST = creator_id_list
 
         return SimpleNamespace(
             platform=config.PLATFORM,

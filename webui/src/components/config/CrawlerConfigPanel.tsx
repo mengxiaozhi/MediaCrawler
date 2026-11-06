@@ -3,13 +3,16 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Database, Globe, Image as ImageIcon, KeyRound, MessageSquare, Play, Square, X } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { useCrawlerStore } from '@/store/crawlerStore'
 import { usePlatforms, useConfigOptions, useStartCrawler, useStopCrawler } from '@/hooks/useCrawler'
 import { ParsedIdList } from './ParsedIdList'
+
+const META_PLATFORMS = new Set(['threads', 'facebook'])
+const META_SAVE_OPTIONS = new Set(['json', 'jsonl', 'csv', 'excel'])
 
 type SectionProps = {
   title: string
@@ -142,6 +145,26 @@ export function CrawlerConfigPanel() {
   const { mutate: startCrawler, isPending: isStarting } = useStartCrawler()
   const { mutate: stopCrawler, isPending: isStopping } = useStopCrawler()
 
+  const isMetaPlatform = META_PLATFORMS.has(config.platform)
+  const loginTypes = options?.login_types.filter((type) =>
+    isMetaPlatform ? type.value === 'cookie' || type.value === 'manual' : type.value !== 'manual'
+  )
+  const saveOptions = options?.save_options.filter((option) =>
+    !isMetaPlatform || META_SAVE_OPTIONS.has(option.value)
+  )
+
+  const handlePlatformChange = (platform: string) => {
+    const isMeta = META_PLATFORMS.has(platform)
+    updateConfig({
+      platform,
+      login_type: isMeta
+        ? (config.login_type === 'cookie' ? 'cookie' : 'manual')
+        : (config.login_type === 'manual' ? 'qrcode' : config.login_type),
+      save_option: isMeta && !META_SAVE_OPTIONS.has(config.save_option) ? 'jsonl' : config.save_option,
+      enable_media: isMeta ? false : config.enable_media,
+    })
+  }
+
   const isDisabled = status === 'running' || status === 'stopping'
   const isRunning = status === 'running'
   const isBusy = isStarting || isStopping || status === 'stopping'
@@ -167,18 +190,20 @@ export function CrawlerConfigPanel() {
           <Field label={t('field.platform')}>
             <Select
               value={config.platform}
-              onValueChange={(value) => updateConfig({ platform: value })}
+              onValueChange={handlePlatformChange}
               disabled={isDisabled}
             >
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue placeholder={t('field.platformPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {platforms?.map((platform) => (
-                  <SelectItem key={platform.value} value={platform.value}>
-                    {platform.label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {platforms?.map((platform) => (
+                    <SelectItem key={platform.value} value={platform.value}>
+                      {platform.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
@@ -194,11 +219,13 @@ export function CrawlerConfigPanel() {
                   <SelectValue placeholder={t('field.crawlTypePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {options?.crawler_types.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {options?.crawler_types.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </Field>
@@ -280,7 +307,7 @@ export function CrawlerConfigPanel() {
           description={t('section.authMatrix.description')}
           icon={KeyRound}
         >
-          <Field label={t('field.loginMethod')}>
+          <Field label={t('field.loginMethod')} hint={isMetaPlatform ? t('field.metaLoginHint') : undefined}>
             <Select
               value={config.login_type}
               onValueChange={(value) => updateConfig({ login_type: value })}
@@ -290,11 +317,13 @@ export function CrawlerConfigPanel() {
                 <SelectValue placeholder={t('field.loginMethodPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {options?.login_types.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {loginTypes?.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.value === 'manual' ? t('field.manualLogin') : type.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
@@ -324,7 +353,7 @@ export function CrawlerConfigPanel() {
           description={t('section.outputConfig.description')}
           icon={Database}
         >
-          <Field label={t('field.saveFormat')}>
+          <Field label={t('field.saveFormat')} hint={isMetaPlatform ? t('field.metaStorageHint') : undefined}>
             <Select
               value={config.save_option}
               onValueChange={(value) => updateConfig({ save_option: value })}
@@ -334,11 +363,13 @@ export function CrawlerConfigPanel() {
                 <SelectValue placeholder={t('field.saveFormatPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {options?.save_options.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {saveOptions?.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
@@ -375,7 +406,7 @@ export function CrawlerConfigPanel() {
               <Checkbox
                 checked={config.enable_media}
                 onCheckedChange={(checked) => updateConfig({ enable_media: checked === true })}
-                disabled={isDisabled}
+                disabled={isDisabled || isMetaPlatform}
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

@@ -18,7 +18,7 @@
 
 from enum import Enum
 from typing import Optional, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 MAX_API_LIMIT_COUNT = 10000
@@ -33,6 +33,8 @@ class PlatformEnum(str, Enum):
     WEIBO = "wb"
     TIEBA = "tieba"
     ZHIHU = "zhihu"
+    THREADS = "threads"
+    FACEBOOK = "facebook"
 
 
 class LoginTypeEnum(str, Enum):
@@ -40,6 +42,7 @@ class LoginTypeEnum(str, Enum):
     QRCODE = "qrcode"
     PHONE = "phone"
     COOKIE = "cookie"
+    MANUAL = "manual"
 
 
 class CrawlerTypeEnum(str, Enum):
@@ -77,6 +80,17 @@ class CrawlerStartRequest(BaseModel):
     headless: bool = False
     max_notes_count: Optional[int] = Field(default=None, ge=1, le=MAX_API_LIMIT_COUNT)
     max_comments_count: Optional[int] = Field(default=None, ge=1, le=MAX_API_LIMIT_COUNT)
+
+    @model_validator(mode="after")
+    def validate_platform_options(self):
+        if self.platform in {PlatformEnum.THREADS, PlatformEnum.FACEBOOK}:
+            if self.save_option.value not in {"json", "jsonl", "csv", "excel"}:
+                raise ValueError("Threads/Facebook support file storage only: json, jsonl, csv, excel")
+            if self.enable_media:
+                raise ValueError("Threads/Facebook media download is not supported")
+            if self.login_type not in {LoginTypeEnum.COOKIE, LoginTypeEnum.MANUAL}:
+                raise ValueError("Threads/Facebook require cookie or manual browser login")
+        return self
 
 
 class CrawlerStatusResponse(BaseModel):
